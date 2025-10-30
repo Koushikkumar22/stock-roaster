@@ -154,6 +154,5 @@ Now roast them:
         </div>
         """, unsafe_allow_html=True)
 
-        with st.expander("🧠 Debug: Show Prompt & Raw Data"):
-            st.code(prompt)
-            st.write(hist.tail(5))
+        with st.expander("🧠 Raw Data"):
+             st.write(hist.tail(10))
