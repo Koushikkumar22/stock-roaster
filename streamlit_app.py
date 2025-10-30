@@ -12,7 +12,7 @@ ssl._create_default_https_context = ssl._create_unverified_context
 st.set_page_config(page_title="🔥 Stock Roaster", layout="centered")
 
 st.title("🔥 Stock Roaster")
-st.caption("Enter a ticker and get a short, funny roast based on recent price action.")
+st.caption("Enter a ticker and get a short, funny roast based on its performance and industry trends.")
 
 # --- Gemini API Key ---
 def get_gemini_key():
@@ -45,12 +45,14 @@ if st.button("Roast it! 🎤"):
         st.error("Please enter a ticker symbol.")
         st.stop()
 
-    with st.spinner("Fetching data & crafting your roast..."):
+    with st.spinner("Fetching stock data & cooking your roast... 🍳"):
         try:
             t = yf.Ticker(ticker)
             hist = t.history(period=period, interval="1d")
+            info = t.info  # Fetch metadata about the company
+
             if hist.empty:
-                st.error(f"❌ No data for {ticker}. Try another or add .NS for NSE stocks.")
+                st.error(f"❌ No data for {ticker}. Try another or include .NS for Indian stocks.")
                 st.stop()
         except Exception as e:
             st.error(f"❌ Error fetching data: {e}")
@@ -63,8 +65,19 @@ if st.button("Roast it! 🎤"):
         mean_vol = int(hist["Volume"].mean()) if "Volume" in hist.columns else None
         latest_date = hist.index[-1].strftime("%Y-%m-%d")
 
+        # --- Company info (fallback-safe) ---
+        company_name = info.get("shortName", ticker)
+        sector = info.get("sector", "Unknown Sector")
+        industry = info.get("industry", "Unknown Industry")
+        market_cap = info.get("marketCap", None)
+        market_cap_str = f"${market_cap/1e9:.2f}B" if market_cap else "N/A"
+
         summary = (
+            f"Company: {company_name}\n"
             f"Ticker: {ticker}\n"
+            f"Sector: {sector}\n"
+            f"Industry: {industry}\n"
+            f"Market Cap: {market_cap_str}\n"
             f"Latest close: {last_close:.2f}\n"
             f"Period: {period}\n"
             f"Period change: {pct_change:.2f}%\n"
@@ -73,35 +86,43 @@ if st.button("Roast it! 🎤"):
         if mean_vol:
             summary += f"Average daily volume: {mean_vol}\n"
 
+        # --- Display chart & stats ---
         st.subheader("📊 Price Chart")
         st.line_chart(hist["Close"])
 
         st.subheader("📈 Quick Stats")
         color = "green" if pct_change >= 0 else "red"
         st.markdown(
-            f"* **Latest Close:** ${last_close:,.2f}\n"
-            f"* **{period} Change:** :{'chart_with_upwards_trend' if pct_change >= 0 else 'chart_with_downwards_trend'}: "
-            f"<span style='color:{color}; font-weight:bold;'>{pct_change:+.2f}%</span>\n"
-            f"* **Latest Date:** {latest_date}",
+            f"* **Company:** {company_name}\n"
+            f"* **Sector:** {sector}\n"
+            f"* **Industry:** {industry}\n"
+            f"* **Market Cap:** {market_cap_str}\n"
+            f"* **{period} Change:** <span style='color:{color}; font-weight:bold;'>{pct_change:+.2f}%</span>\n",
             unsafe_allow_html=True
         )
 
         # --- Roast Prompt ---
         roast_styles = {
-            "Savage": "Make it brutally savage and funny.",
-            "Playful": "Make it light-hearted but clever.",
-            "Dry": "Make it sarcastic, dry and witty."
+            "Savage": "Make it brutally savage, darkly funny, and use clever finance/industry references.",
+            "Playful": "Make it light-hearted, witty, and sprinkle finance-related humor.",
+            "Dry": "Make it sarcastic, short, and deadpan funny."
         }
 
         prompt = f"""
-You are a finance roast comedian.
-Using the stock data below, write **3 short, funny one-liner roasts** in the {tone.lower()} style.
-Avoid giving financial advice or serious tone. Use emojis, humor, and clever wordplay.
+You are a finance roast comedian and market analyst.
+Your goal is to roast the company below based on its stock performance, sector, and industry.
+
+Instructions:
+- Write **3 distinct one-liner roasts**.
+- Be specific: reference its **industry trends, business reputation, or recent stock behavior**.
+- Each roast must use emojis and feel like a viral tweet or meme caption.
+- Avoid any financial advice or sensitive content.
+- Tone style: {roast_styles[tone]}
 
 DATA:
 {summary}
 
-Roasts:
+Now roast them:
 """
 
         # --- Gemini API Call (2.5 Flash) ---
@@ -128,7 +149,7 @@ Roasts:
         # --- Display Roast ---
         st.subheader("🔥 The Roast Wall 🔥")
         st.markdown(f"""
-        <div style="background-color:#ffeaea; padding:20px; border-radius:15px; border:2px solid #ff4b4b; font-size:1.1em; color:#2b2b2b;">
+        <div style="background-color:#fff3f3; padding:25px; border-radius:15px; border:2px solid #ff4b4b; font-size:1.1em; color:#2b2b2b; line-height:1.6;">
         {roast_text}
         </div>
         """, unsafe_allow_html=True)
