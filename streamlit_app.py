@@ -4,8 +4,9 @@ import pandas as pd
 import requests
 import os
 import ssl
+import plotly.graph_objects as go
 
-# --- SSL FIX (bypass local self-signed certificate issues) ---
+# --- SSL FIX ---
 ssl._create_default_https_context = ssl._create_unverified_context
 
 # --- Page Setup ---
@@ -37,7 +38,7 @@ with col2:
 
 tone = st.radio("Roast tone", ["Savage", "Playful", "Dry"], index=0, horizontal=True)
 
-st.info("⚠️ For entertainment only. Not financial advice!")
+st.info("⚠️ For entertainment only. Not financial advice! \n\n💡 Tip: For Indian stocks, use `.NS` at the end (e.g., RELIANCE.NS, TCS.NS)")
 
 # --- Button Action ---
 if st.button("Roast it! 🎤"):
@@ -49,7 +50,7 @@ if st.button("Roast it! 🎤"):
         try:
             t = yf.Ticker(ticker)
             hist = t.history(period=period, interval="1d")
-            info = t.info  # Fetch metadata about the company
+            info = t.info
 
             if hist.empty:
                 st.error(f"❌ No data for {ticker}. Try another or include .NS for Indian stocks.")
@@ -65,7 +66,7 @@ if st.button("Roast it! 🎤"):
         mean_vol = int(hist["Volume"].mean()) if "Volume" in hist.columns else None
         latest_date = hist.index[-1].strftime("%Y-%m-%d")
 
-        # --- Company info (fallback-safe) ---
+        # --- Company info ---
         company_name = info.get("shortName", ticker)
         sector = info.get("sector", "Unknown Sector")
         industry = info.get("industry", "Unknown Industry")
@@ -110,7 +111,7 @@ DATA:
 Now roast them:
 """
 
-        # --- Gemini API Call (2.5 Flash) ---
+        # --- Gemini API Call ---
         try:
             response = requests.post(
                 "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
@@ -131,19 +132,46 @@ Now roast them:
             st.error(f"❌ Gemini API Error: {e}")
             st.stop()
 
-        # --- 🧱 Roast Wall (Above Chart) ---
+        # --- 🔥 Roast Wall ---
         st.subheader("🔥 The Roast Wall 🔥")
         st.markdown(f"""
-        <div style="background-color:#fff3f3; padding:25px; border-radius:15px; border:2px solid #ff4b4b; 
+        <div style="background-color:#fff3f3; padding:25px; border-radius:15px; border:2px solid #ff4b4b;
                     font-size:1.1em; color:#2b2b2b; line-height:1.6; margin-bottom:25px;">
         {roast_text}
         </div>
         """, unsafe_allow_html=True)
 
-        # --- Display chart & stats BELOW roast ---
+        # --- 📊 Improved Price Chart (Plotly) ---
         st.subheader("📊 Price Chart")
-        st.line_chart(hist["Close"])
 
+        hist["MA20"] = hist["Close"].rolling(20).mean()
+
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(
+            x=hist.index, y=hist["Close"],
+            mode="lines", name="Close Price",
+            line=dict(color="#007bff", width=2)
+        ))
+        fig.add_trace(go.Scatter(
+            x=hist.index, y=hist["MA20"],
+            mode="lines", name="20-day Avg",
+            line=dict(color="#ff9900", width=1.5, dash="dot")
+        ))
+
+        fig.update_layout(
+            title=f"{company_name} ({ticker}) Stock Price",
+            xaxis_title="Date",
+            yaxis_title="Price (₹ / $)",
+            template="plotly_white",
+            plot_bgcolor="#f9f9f9",
+            hovermode="x unified",
+            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+            margin=dict(l=20, r=20, t=50, b=20)
+        )
+
+        st.plotly_chart(fig, use_container_width=True)
+
+        # --- 📈 Quick Stats ---
         st.subheader("📈 Quick Stats")
         color = "green" if pct_change >= 0 else "red"
         st.markdown(
