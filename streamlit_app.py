@@ -3,22 +3,17 @@ import yfinance as yf
 import pandas as pd
 import os
 import google.generativeai as genai
-from datetime import datetime
+from datetime import datetime, timedelta
 import ssl
-import warnings
 
 # --- SSL FIX (bypass local self-signed certificate issues) ---
 ssl._create_default_https_context = ssl._create_unverified_context
 
-# --- Ignore InsecureRequestWarnings ---
-warnings.filterwarnings("ignore", category=UserWarning)
-warnings.filterwarnings("ignore", category=FutureWarning)
-
-# --- Streamlit Page Setup ---
+# --- Page Setup ---
 st.set_page_config(page_title="Stock Roaster 🔥", layout="centered")
 
 st.title("🔥 Stock Roaster")
-st.caption("Enter a ticker and get a short, funny roast based on recent price action.")
+st.caption("Enter a ticker and get a funny, brutal, or sarcastic roast based on recent price action.")
 
 # --- Gemini API Key Handling ---
 def get_gemini_key():
@@ -29,10 +24,10 @@ def get_gemini_key():
 GEMINI_API_KEY = get_gemini_key()
 
 if not GEMINI_API_KEY:
-    st.warning("🚨 Gemini API key not found. Please set it as an environment variable or in Streamlit secrets.")
+    st.warning("🚨 **Gemini API key not found.** Please set `GEMINI_API_KEY` locally or in Streamlit secrets.")
     st.stop()
 
-# --- Configure Gemini ---
+# Configure Gemini
 genai.configure(api_key=GEMINI_API_KEY)
 
 # --- Input Section ---
@@ -54,21 +49,18 @@ if st.button("Roast it! 🎤"):
         st.error("Please enter a stock ticker.")
         st.stop()
 
-    with st.spinner("Fetching data and crafting a killer roast..."):
+    with st.spinner("Fetching data and cooking up a spicy roast..."):
         try:
-            # --- Fetch data with SSL bypass ---
-            ssl._create_default_https_context = ssl._create_unverified_context
             t = yf.Ticker(ticker)
             hist = t.history(period=period, interval="1d")
-            
             if hist.empty:
-                st.error(f"❌ No data found for **{ticker}**. Try a valid symbol or include suffix (e.g., .NS).")
+                st.error(f"❌ No data found for {ticker}. Try a different one or add `.NS` for Indian stocks.")
                 st.stop()
         except Exception as e:
             st.error(f"❌ Error fetching data: {e}")
             st.stop()
 
-        # --- Compute stats ---
+        # --- Compute basic stats ---
         last_close = float(hist["Close"].iloc[-1])
         first_close = float(hist["Close"].iloc[0])
         pct_change = ((last_close - first_close) / first_close) * 100
@@ -79,40 +71,49 @@ if st.button("Roast it! 🎤"):
             f"Ticker: {ticker}\n"
             f"Latest close: {last_close:.2f}\n"
             f"Period: {period}\n"
-            f"Period change: {pct_change:.2f}%\n"
+            f"Change over period: {pct_change:.2f}%\n"
             f"Latest date: {latest_date}\n"
         )
         if mean_vol:
-            summary += f"Average daily volume: {mean_vol}\n"
+            summary += f"Avg daily volume: {mean_vol}\n"
 
         # --- Display Data ---
         st.subheader("📊 Price Chart")
-        st.line_chart(hist["Close"], height=300)
+        st.line_chart(hist["Close"])
 
         st.subheader("📈 Quick Stats")
         change_style = "green" if pct_change >= 0 else "red"
         st.markdown(f"""
         * **Latest Close:** ${last_close:,.2f}  
-        * **{period} Change:** :{"chart_with_upwards_trend" if pct_change >= 0 else "chart_with_downwards_trend"}:  
+        * **{period} Change:** :{"chart_with_upwards_trend" if pct_change >= 0 else "chart_with_downwards_trend"}: 
           <span style="color:{change_style}; font-weight:bold;">{pct_change:+.2f}%</span>  
         * **Latest Date:** {latest_date}
         """, unsafe_allow_html=True)
 
         # --- Roast Prompt ---
         roast_instructions = {
-            "Savage": "Make a savage, biting one-liner roast.",
-            "Playful": "Make a light-hearted, funny one-liner roast.",
-            "Dry": "Make a short, dry, witty one-liner roast."
+            "Savage": "Make it brutally honest, sarcastic, and meme-worthy. Think Twitter-level savagery.",
+            "Playful": "Make it funny, friendly, and creative with emojis and pop-culture references.",
+            "Dry": "Make it witty and subtle — like a Wall Street analyst with dark humor."
         }
 
         prompt = f"""
-You are a sarcastic financial commentator. Using the stock data below, write a short (1-2 sentences) {roast_instructions[tone]}
-Do NOT include financial advice or predictions. Keep it clever, funny, and concise.
+You are a hilarious, sarcastic stock market commentator.
+Using the stock data below, create 3-5 short roasts (1–2 sentences each).
+Each roast should have a different tone (sarcastic, Gen Z meme, corporate roast, optimistic denial, etc.).
+Keep them short, funny, and original — no financial advice, no generic text.
 
---- STOCK DATA ---
+DATA TO ROAST:
 {summary}
+
+Tone to lean toward: {roast_instructions[tone]}
+
+Format the output like:
+1. 🥶 [Roast line]
+2. 📉 [Roast line]
+3. 💀 [Roast line]
 ---
-Roast:
+Now roast:
 """
 
         # --- Call Gemini API ---
@@ -125,14 +126,13 @@ Roast:
             st.stop()
 
         # --- Display Roast ---
-        st.subheader("👑 The Verdict: Roast Time!")
+        st.subheader("🔥 The Roast Wall 🔥")
         st.markdown(f"""
-        <div style="padding: 20px; border-radius: 12px; border: 2px solid #FF4B4B; 
-                    background-color: #ffeaea; margin-top:10px;">
-            <p style="font-size: 1.2em; font-style: italic; color: #800000; margin: 0;">{roast_text}</p>
+        <div style="padding: 20px; border-radius: 12px; border: 2px solid #ff4b4b; background-color: #fff1f1;">
+            <pre style="font-size: 1.1em; color: #800000; white-space: pre-wrap;">{roast_text}</pre>
         </div>
         """, unsafe_allow_html=True)
 
-        with st.expander("🕵️ Debug Info"):
+        with st.expander("🧠 Debug: Show Prompt & Raw Data"):
             st.code(prompt)
             st.write(hist.tail(5))
