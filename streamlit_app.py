@@ -155,5 +155,5 @@ Now roast them:
             unsafe_allow_html=True
         )
 
-        with st.expander("🧠 Raw Data"):
+        with st.expander("🧠 Raw Data "):
             st.write(hist.tail(10))
