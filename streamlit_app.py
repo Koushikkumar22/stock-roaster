@@ -70,7 +70,7 @@ if st.button("Roast it! 🎤"):
         sector = info.get("sector", "Unknown Sector")
         industry = info.get("industry", "Unknown Industry")
         market_cap = info.get("marketCap", None)
-        market_cap_str = f"${market_cap/1e9:.2f}B" if market_cap else "N/A"
+        market_cap_str = f"{market_cap/1e9:.2f}B" if market_cap else "N/A"
 
         summary = (
             f"Company: {company_name}\n"
