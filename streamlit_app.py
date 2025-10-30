@@ -10,8 +10,9 @@ ssl._create_default_https_context = ssl._create_unverified_context
 
 # --- Page Setup ---
 st.set_page_config(page_title="🔥 Stock Roaster", layout="centered")
+
 st.title("🔥 Stock Roaster")
-st.caption("Type a company name — get a chart and a spicy roast about its stock performance. 😎")
+st.caption("Enter a ticker and get a short, funny roast based on its performance and industry trends.")
 
 # --- Gemini API Key ---
 def get_gemini_key():
@@ -25,24 +26,11 @@ if not GEMINI_API_KEY:
     st.warning("🚨 Gemini API key not found. Please set GEMINI_API_KEY in environment or Streamlit secrets.")
     st.stop()
 
-# --- Helper: Find ticker from company name ---
-def get_ticker_from_name(query):
-    """Search Yahoo Finance for a company name and return its best ticker match."""
-    url = f"https://query2.finance.yahoo.com/v1/finance/search?q={query}"
-    try:
-        res = requests.get(url, timeout=10)
-        data = res.json()
-        if "quotes" in data and len(data["quotes"]) > 0:
-            return data["quotes"][0]["symbol"]
-        return None
-    except Exception:
-        return None
-
 # --- Input UI ---
 col1, col2 = st.columns([3, 1])
 
 with col1:
-    user_input = st.text_input("Company Name or Ticker (e.g., Apple, Infosys, Tesla)", value="Apple").strip()
+    ticker = st.text_input("Ticker (e.g., AAPL, RELIANCE.NS, TCS.NS)", value="AAPL").strip().upper()
 
 with col2:
     period = st.selectbox("Period", ["1mo", "3mo", "6mo"], index=0)
@@ -53,21 +41,11 @@ st.info("⚠️ For entertainment only. Not financial advice!")
 
 # --- Button Action ---
 if st.button("Roast it! 🎤"):
-    if not user_input:
-        st.error("Please enter a company name or ticker.")
+    if not ticker:
+        st.error("Please enter a ticker symbol.")
         st.stop()
 
-    with st.spinner("Finding the stock and cooking your roast... 🍳"):
-        # Try to get ticker
-        ticker = user_input.upper()
-        if not any(char.isdigit() for char in ticker):  # probably a name
-            found_ticker = get_ticker_from_name(user_input)
-            if found_ticker:
-                ticker = found_ticker
-            else:
-                st.error(f"❌ Couldn’t find a ticker for '{user_input}'. Try another name.")
-                st.stop()
-
+    with st.spinner("Fetching stock data & cooking your roast... 🍳"):
         try:
             t = yf.Ticker(ticker)
             hist = t.history(period=period, interval="1d")
@@ -87,6 +65,7 @@ if st.button("Roast it! 🎤"):
         mean_vol = int(hist["Volume"].mean()) if "Volume" in hist.columns else None
         latest_date = hist.index[-1].strftime("%Y-%m-%d")
 
+        # --- Company info (fallback-safe) ---
         company_name = info.get("shortName", ticker)
         sector = info.get("sector", "Unknown Sector")
         industry = info.get("industry", "Unknown Industry")
@@ -107,7 +86,22 @@ if st.button("Roast it! 🎤"):
         if mean_vol:
             summary += f"Average daily volume: {mean_vol}\n"
 
-        # --- Gemini Roast Prompt ---
+        # --- Display chart & stats ---
+        st.subheader("📊 Price Chart")
+        st.line_chart(hist["Close"])
+
+        st.subheader("📈 Quick Stats")
+        color = "green" if pct_change >= 0 else "red"
+        st.markdown(
+            f"* **Company:** {company_name}\n"
+            f"* **Sector:** {sector}\n"
+            f"* **Industry:** {industry}\n"
+            f"* **Market Cap:** {market_cap_str}\n"
+            f"* **{period} Change:** <span style='color:{color}; font-weight:bold;'>{pct_change:+.2f}%</span>\n",
+            unsafe_allow_html=True
+        )
+
+        # --- Roast Prompt ---
         roast_styles = {
             "Savage": "Make it brutally savage, darkly funny, and use clever finance/industry references.",
             "Playful": "Make it light-hearted, witty, and sprinkle finance-related humor.",
@@ -152,40 +146,13 @@ Now roast them:
             st.error(f"❌ Gemini API Error: {e}")
             st.stop()
 
-        # --- Display Roast Wall ---
-        st.markdown(
-            f"""
-            <div style="
-                background-color:#fff3f3;
-                padding:25px;
-                border-radius:15px;
-                border:2px solid #ff4b4b;
-                font-size:1.1em;
-                color:#2b2b2b;
-                line-height:1.6;
-                margin-bottom:25px;
-            ">
-            <h3 style="text-align:center;">🔥 The Roast Wall 🔥</h3>
-            {roast_text}
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
-
-        # --- Chart & Stats ---
-        st.subheader("📊 Price Chart")
-        st.line_chart(hist["Close"])
-
-        st.subheader("📈 Quick Stats")
-        color = "green" if pct_change >= 0 else "red"
-        st.markdown(
-            f"* **Company:** {company_name}\n"
-            f"* **Sector:** {sector}\n"
-            f"* **Industry:** {industry}\n"
-            f"* **Market Cap:** {market_cap_str}\n"
-            f"* **{period} Change:** <span style='color:{color}; font-weight:bold;'>{pct_change:+.2f}%</span>\n",
-            unsafe_allow_html=True
-        )
+        # --- Display Roast ---
+        st.subheader("🔥 The Roast Wall 🔥")
+        st.markdown(f"""
+        <div style="background-color:#fff3f3; padding:25px; border-radius:15px; border:2px solid #ff4b4b; font-size:1.1em; color:#2b2b2b; line-height:1.6;">
+        {roast_text}
+        </div>
+        """, unsafe_allow_html=True)
 
         with st.expander("🧠 Debug: Show Prompt & Raw Data"):
             st.code(prompt)
