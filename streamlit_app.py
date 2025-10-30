@@ -86,21 +86,6 @@ if st.button("Roast it! 🎤"):
         if mean_vol:
             summary += f"Average daily volume: {mean_vol}\n"
 
-        # --- Display chart & stats ---
-        st.subheader("📊 Price Chart")
-        st.line_chart(hist["Close"])
-
-        st.subheader("📈 Quick Stats")
-        color = "green" if pct_change >= 0 else "red"
-        st.markdown(
-            f"* **Company:** {company_name}\n"
-            f"* **Sector:** {sector}\n"
-            f"* **Industry:** {industry}\n"
-            f"* **Market Cap:** {market_cap_str}\n"
-            f"* **{period} Change:** <span style='color:{color}; font-weight:bold;'>{pct_change:+.2f}%</span>\n",
-            unsafe_allow_html=True
-        )
-
         # --- Roast Prompt ---
         roast_styles = {
             "Savage": "Make it brutally savage, darkly funny, and use clever finance/industry references.",
@@ -146,13 +131,29 @@ Now roast them:
             st.error(f"❌ Gemini API Error: {e}")
             st.stop()
 
-        # --- Display Roast ---
+        # --- 🧱 Roast Wall (Above Chart) ---
         st.subheader("🔥 The Roast Wall 🔥")
         st.markdown(f"""
-        <div style="background-color:#fff3f3; padding:25px; border-radius:15px; border:2px solid #ff4b4b; font-size:1.1em; color:#2b2b2b; line-height:1.6;">
+        <div style="background-color:#fff3f3; padding:25px; border-radius:15px; border:2px solid #ff4b4b; 
+                    font-size:1.1em; color:#2b2b2b; line-height:1.6; margin-bottom:25px;">
         {roast_text}
         </div>
         """, unsafe_allow_html=True)
 
+        # --- Display chart & stats BELOW roast ---
+        st.subheader("📊 Price Chart")
+        st.line_chart(hist["Close"])
+
+        st.subheader("📈 Quick Stats")
+        color = "green" if pct_change >= 0 else "red"
+        st.markdown(
+            f"* **Company:** {company_name}\n"
+            f"* **Sector:** {sector}\n"
+            f"* **Industry:** {industry}\n"
+            f"* **Market Cap:** {market_cap_str}\n"
+            f"* **{period} Change:** <span style='color:{color}; font-weight:bold;'>{pct_change:+.2f}%</span>\n",
+            unsafe_allow_html=True
+        )
+
         with st.expander("🧠 Raw Data"):
-             st.write(hist.tail(10))
+            st.write(hist.tail(10))
