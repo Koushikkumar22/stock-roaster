@@ -14,14 +14,12 @@ st.set_page_config(page_title="🔥 Stock Roaster", layout="wide")
 # --- Custom CSS for Modern Look ---
 st.markdown("""
     <style>
-    /* Background gradient */
     .stApp {
         background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
         color: white;
         font-family: 'Poppins', sans-serif;
     }
 
-    /* Title styling */
     .title {
         font-size: 3em;
         text-align: center;
@@ -29,10 +27,9 @@ st.markdown("""
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         font-weight: 800;
-        margin-bottom: 0.3em;
+        margin-bottom: 0.2em;
     }
 
-    /* Caption */
     .caption {
         text-align: center;
         color: #ddd;
@@ -40,7 +37,6 @@ st.markdown("""
         font-size: 1.1em;
     }
 
-    /* Input card */
     .glass-card {
         background: rgba(255, 255, 255, 0.08);
         border-radius: 15px;
@@ -50,7 +46,6 @@ st.markdown("""
         margin-bottom: 2em;
     }
 
-    /* Roast box */
     .roast-box {
         background: rgba(255, 77, 77, 0.12);
         border: 1px solid #ff4b4b;
@@ -61,7 +56,6 @@ st.markdown("""
         box-shadow: 0 4px 25px rgba(255, 75, 75, 0.2);
     }
 
-    /* Button style */
     div.stButton > button:first-child {
         background: linear-gradient(90deg, #ff4b4b, #ff9966);
         color: white;
@@ -77,7 +71,6 @@ st.markdown("""
         background: linear-gradient(90deg, #ff9966, #ff4b4b);
     }
 
-    /* Chart section */
     .chart-container {
         background: rgba(255,255,255,0.08);
         border-radius: 15px;
@@ -86,7 +79,6 @@ st.markdown("""
         border: 1px solid rgba(255,255,255,0.1);
     }
 
-    /* Stats section */
     .stats {
         background: rgba(255,255,255,0.06);
         border-radius: 15px;
@@ -94,6 +86,13 @@ st.markdown("""
         margin-top: 20px;
         color: #eee;
         border-left: 5px solid #ff4b4b;
+    }
+
+    .hint {
+        color: #aaa;
+        font-size: 0.9em;
+        margin-top: -10px;
+        margin-bottom: 15px;
     }
 
     </style>
@@ -120,13 +119,24 @@ st.markdown("<div class='glass-card'>", unsafe_allow_html=True)
 col1, col2, col3 = st.columns([3, 1, 1])
 
 with col1:
-    ticker = st.text_input("📈 Ticker Symbol", value="AAPL").strip().upper()
+    ticker = st.text_input("📈 Stock Ticker", value="AAPL").strip().upper()
+    st.markdown("<p class='hint'>💡 Example: <code>AAPL</code> for Apple, <code>RELIANCE.NS</code> or <code>TCS.NS</code> for Indian stocks</p>", unsafe_allow_html=True)
 
 with col2:
-    period = st.selectbox("🕒 Period", ["1mo", "3mo", "6mo"], index=0)
+    period = st.selectbox("🕒 Time Period", ["1mo", "3mo", "6mo"], index=0)
 
 with col3:
-    tone = st.selectbox("🎭 Tone", ["Savage", "Playful", "Dry"], index=0)
+    tone = st.selectbox("🎭 Roast Tone", ["Savage", "Playful", "Dry"], index=0)
+
+# --- Tone Descriptions ---
+st.markdown("""
+<div class='hint'>
+<b>Tone Guide:</b>  
+🔥 <b>Savage</b> — brutally honest, dark humor.  
+😜 <b>Playful</b> — witty and lighthearted.  
+😏 <b>Dry</b> — sarcastic, short, and deadpan funny.
+</div>
+""", unsafe_allow_html=True)
 
 st.info("⚠️ For entertainment only. Not financial advice.")
 st.markdown("</div>", unsafe_allow_html=True)
