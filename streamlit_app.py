@@ -14,14 +14,11 @@ st.set_page_config(page_title="🔥 Stock Roaster", page_icon="🔥", layout="ce
 # --- Custom CSS for Modern UI ---
 st.markdown("""
     <style>
-    /* Background Gradient */
     .stApp {
         background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
         color: #f5f5f5;
         font-family: 'Inter', sans-serif;
     }
-
-    /* Title Styling */
     .title {
         text-align: center;
         font-size: 3rem !important;
@@ -30,7 +27,6 @@ st.markdown("""
         text-shadow: 0 0 25px rgba(255,75,75,0.6);
         margin-bottom: 0;
     }
-
     .subtitle {
         text-align: center;
         font-size: 1.1rem;
@@ -38,16 +34,12 @@ st.markdown("""
         margin-top: 5px;
         margin-bottom: 40px;
     }
-
-    /* Input Box */
     .stTextInput>div>div>input {
         border-radius: 10px;
         border: 1px solid #555;
         background-color: #1e1e1e;
         color: white;
     }
-
-    /* Buttons */
     div.stButton > button {
         background: linear-gradient(90deg, #ff4b4b, #ff8c00);
         color: white;
@@ -62,8 +54,6 @@ st.markdown("""
         transform: scale(1.05);
         box-shadow: 0 0 15px rgba(255, 120, 50, 0.7);
     }
-
-    /* Roast Box */
     .roast-box {
         background-color: rgba(255,255,255,0.1);
         border: 2px solid #ff4b4b;
@@ -75,8 +65,6 @@ st.markdown("""
         line-height: 1.6;
         box-shadow: 0 0 15px rgba(255,75,75,0.3);
     }
-
-    /* Info Box */
     .info-box {
         background-color: rgba(255,255,255,0.05);
         border-radius: 10px;
@@ -85,18 +73,11 @@ st.markdown("""
         color: #ccc;
         margin-bottom: 15px;
     }
-
-    /* Chart + Stats section */
     .section-title {
         color: #ffd580;
         font-size: 1.4rem;
         font-weight: 700;
         margin-top: 20px;
-    }
-
-    /* Expander background */
-    .streamlit-expanderHeader {
-        font-weight: 600;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -107,14 +88,15 @@ st.markdown("<p class='subtitle'>Enter a stock ticker and get a funny AI roast b
 
 # --- Gemini API Key ---
 def get_gemini_key():
-    if "GEMINI_API_KEY" in st.secrets:
+    try:
         return st.secrets["GEMINI_API_KEY"]
-    return os.environ.get("GEMINI_API_KEY")
+    except Exception:
+        return os.environ.get("GEMINI_API_KEY")
 
 GEMINI_API_KEY = get_gemini_key()
 
 if not GEMINI_API_KEY:
-    st.warning("🚨 Gemini API key not found. Please set GEMINI_API_KEY in environment or Streamlit secrets.")
+    st.warning("🚨 Gemini API key not found. Please set GEMINI_API_KEY in Streamlit Secrets or environment.")
     st.stop()
 
 # --- Input Area ---
