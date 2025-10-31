@@ -5,14 +5,103 @@ import requests
 import os
 import ssl
 
-# --- SSL FIX (bypass local self-signed certificate issues) ---
+# --- SSL FIX ---
 ssl._create_default_https_context = ssl._create_unverified_context
 
-# --- Page Setup ---
-st.set_page_config(page_title="🔥 Stock Roaster", layout="centered")
+# --- Modern Page Setup ---
+st.set_page_config(page_title="🔥 Stock Roaster", layout="wide")
 
-st.title("🔥 Stock Roaster")
-st.caption("Enter a ticker and get a short, funny roast based on its performance and industry trends.")
+# --- Custom CSS for Modern Look ---
+st.markdown("""
+    <style>
+    /* Background gradient */
+    .stApp {
+        background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+        color: white;
+        font-family: 'Poppins', sans-serif;
+    }
+
+    /* Title styling */
+    .title {
+        font-size: 3em;
+        text-align: center;
+        background: linear-gradient(90deg, #ff4b4b, #ff9966);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        font-weight: 800;
+        margin-bottom: 0.3em;
+    }
+
+    /* Caption */
+    .caption {
+        text-align: center;
+        color: #ddd;
+        margin-bottom: 2em;
+        font-size: 1.1em;
+    }
+
+    /* Input card */
+    .glass-card {
+        background: rgba(255, 255, 255, 0.08);
+        border-radius: 15px;
+        padding: 25px;
+        box-shadow: 0 4px 25px rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        margin-bottom: 2em;
+    }
+
+    /* Roast box */
+    .roast-box {
+        background: rgba(255, 77, 77, 0.12);
+        border: 1px solid #ff4b4b;
+        padding: 25px;
+        border-radius: 20px;
+        font-size: 1.1em;
+        color: #fff;
+        box-shadow: 0 4px 25px rgba(255, 75, 75, 0.2);
+    }
+
+    /* Button style */
+    div.stButton > button:first-child {
+        background: linear-gradient(90deg, #ff4b4b, #ff9966);
+        color: white;
+        border: none;
+        padding: 0.7em 1.5em;
+        border-radius: 10px;
+        font-weight: 600;
+        font-size: 1.1em;
+        transition: all 0.3s ease;
+    }
+    div.stButton > button:hover {
+        transform: scale(1.03);
+        background: linear-gradient(90deg, #ff9966, #ff4b4b);
+    }
+
+    /* Chart section */
+    .chart-container {
+        background: rgba(255,255,255,0.08);
+        border-radius: 15px;
+        padding: 20px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        border: 1px solid rgba(255,255,255,0.1);
+    }
+
+    /* Stats section */
+    .stats {
+        background: rgba(255,255,255,0.06);
+        border-radius: 15px;
+        padding: 15px 25px;
+        margin-top: 20px;
+        color: #eee;
+        border-left: 5px solid #ff4b4b;
+    }
+
+    </style>
+""", unsafe_allow_html=True)
+
+# --- Header ---
+st.markdown("<div class='title'>🔥 Stock Roaster</div>", unsafe_allow_html=True)
+st.markdown("<div class='caption'>Enter a ticker and let AI roast it based on its performance and industry trends 😎</div>", unsafe_allow_html=True)
 
 # --- Gemini API Key ---
 def get_gemini_key():
@@ -26,21 +115,26 @@ if not GEMINI_API_KEY:
     st.warning("🚨 Gemini API key not found. Please set GEMINI_API_KEY in environment or Streamlit secrets.")
     st.stop()
 
-# --- Input UI ---
-col1, col2 = st.columns([3, 1])
+# --- Input Section ---
+st.markdown("<div class='glass-card'>", unsafe_allow_html=True)
+col1, col2, col3 = st.columns([3, 1, 1])
 
 with col1:
-    ticker = st.text_input("Ticker (e.g., AAPL, RELIANCE.NS, TCS.NS)", value="AAPL").strip().upper()
+    ticker = st.text_input("📈 Ticker Symbol", value="AAPL").strip().upper()
 
 with col2:
-    period = st.selectbox("Period", ["1mo", "3mo", "6mo"], index=0)
+    period = st.selectbox("🕒 Period", ["1mo", "3mo", "6mo"], index=0)
 
-tone = st.radio("Roast tone", ["Savage", "Playful", "Dry"], index=0, horizontal=True)
+with col3:
+    tone = st.selectbox("🎭 Tone", ["Savage", "Playful", "Dry"], index=0)
 
-st.info("⚠️ For entertainment only. Not financial advice!")
+st.info("⚠️ For entertainment only. Not financial advice.")
+st.markdown("</div>", unsafe_allow_html=True)
 
-# --- Button Action ---
-if st.button("Roast it! 🎤"):
+# --- Roast Button ---
+roast = st.button("🎤 Roast It!")
+
+if roast:
     if not ticker:
         st.error("Please enter a ticker symbol.")
         st.stop()
@@ -49,7 +143,7 @@ if st.button("Roast it! 🎤"):
         try:
             t = yf.Ticker(ticker)
             hist = t.history(period=period, interval="1d")
-            info = t.info  # Fetch metadata about the company
+            info = t.info
 
             if hist.empty:
                 st.error(f"❌ No data for {ticker}. Try another or include .NS for Indian stocks.")
@@ -65,7 +159,6 @@ if st.button("Roast it! 🎤"):
         mean_vol = int(hist["Volume"].mean()) if "Volume" in hist.columns else None
         latest_date = hist.index[-1].strftime("%Y-%m-%d")
 
-        # --- Company info (fallback-safe) ---
         company_name = info.get("shortName", ticker)
         sector = info.get("sector", "Unknown Sector")
         industry = info.get("industry", "Unknown Industry")
@@ -86,7 +179,6 @@ if st.button("Roast it! 🎤"):
         if mean_vol:
             summary += f"Average daily volume: {mean_vol}\n"
 
-        # --- Roast Prompt ---
         roast_styles = {
             "Savage": "Make it brutally savage, darkly funny, and use clever finance/industry references.",
             "Playful": "Make it light-hearted, witty, and sprinkle finance-related humor.",
@@ -94,15 +186,15 @@ if st.button("Roast it! 🎤"):
         }
 
         prompt = f"""
-You are a finance roast comedian and market analyst.
-Your goal is to roast the company below based on its stock performance, sector, and industry.
+You are a finance roast comedian.
+Roast the company below based on its stock performance, sector, and industry.
 
-Instructions:
-- Write **3 distinct one-liner roasts**.
-- Be specific: reference its **industry trends, business reputation, or recent stock behavior**.
-- Each roast must use emojis and feel like a viral tweet or meme caption.
-- Avoid any financial advice or sensitive content.
-- Tone style: {roast_styles[tone]}
+Rules:
+- Write 3 distinct one-liners.
+- Include emojis and viral tweet-like humor.
+- Avoid any sensitive or financial advice.
+
+Tone: {roast_styles[tone]}
 
 DATA:
 {summary}
@@ -110,7 +202,6 @@ DATA:
 Now roast them:
 """
 
-        # --- Gemini API Call (2.5 Flash) ---
         try:
             response = requests.post(
                 "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
@@ -131,29 +222,30 @@ Now roast them:
             st.error(f"❌ Gemini API Error: {e}")
             st.stop()
 
-        # --- 🧱 Roast Wall (Above Chart) ---
-        st.subheader("🔥 The Roast Wall 🔥")
-        st.markdown(f"""
-        <div style="background-color:#fff3f3; padding:25px; border-radius:15px; border:2px solid #ff4b4b; 
-                    font-size:1.1em; color:#2b2b2b; line-height:1.6; margin-bottom:25px;">
-        {roast_text}
-        </div>
-        """, unsafe_allow_html=True)
+        # --- Roast Display ---
+        st.markdown("<h3 style='text-align:center;'>🔥 The Roast Wall 🔥</h3>", unsafe_allow_html=True)
+        st.markdown(f"<div class='roast-box'>{roast_text}</div>", unsafe_allow_html=True)
 
-        # --- Display chart & stats BELOW roast ---
+        # --- Chart Section ---
+        st.markdown("<div class='chart-container'>", unsafe_allow_html=True)
         st.subheader("📊 Price Chart")
         st.line_chart(hist["Close"])
+        st.markdown("</div>", unsafe_allow_html=True)
 
-        st.subheader("📈 Quick Stats")
-        color = "green" if pct_change >= 0 else "red"
+        # --- Quick Stats ---
+        st.markdown("<div class='stats'>", unsafe_allow_html=True)
+        color = "#00ff88" if pct_change >= 0 else "#ff4b4b"
         st.markdown(
-            f"* **Company:** {company_name}\n"
-            f"* **Sector:** {sector}\n"
-            f"* **Industry:** {industry}\n"
-            f"* **Market Cap:** {market_cap_str}\n"
-            f"* **{period} Change:** <span style='color:{color}; font-weight:bold;'>{pct_change:+.2f}%</span>\n",
+            f"""
+            **Company:** {company_name}  
+            **Sector:** {sector}  
+            **Industry:** {industry}  
+            **Market Cap:** {market_cap_str}  
+            **{period} Change:** <span style='color:{color}; font-weight:bold;'>{pct_change:+.2f}%</span>  
+            """,
             unsafe_allow_html=True
         )
+        st.markdown("</div>", unsafe_allow_html=True)
 
-        with st.expander("🧠 Raw Data "):
+        with st.expander("🧠 Raw Data"):
             st.write(hist.tail(10))
